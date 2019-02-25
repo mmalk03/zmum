@@ -34,3 +34,24 @@ lm.fit1 <- lm(Salary~., data=data_temp)
 summary(lm.fit1)
 lm.fit2 <- lm(Salary~., data=Hitters2)
 summary(lm.fit2)
+
+p <- ncol(x)
+pca.r2 <- numeric(p)
+for (j in 1:p) {
+  lm.fit <- lm(Salary ~ ., data = data_temp[, c(1:j, ncol(data_temp))])
+  pca.r2[j] <- summary(lm.fit)$r.squared
+}
+plot(1:p, pca.r2, type = 'b', col = 'orange', lwd = 2, xlab = 'Variables', ylab = 'R2')
+
+lm.fit2 <- lm(Salary~., data=Hitters2)
+summary(lm.fit2)
+tstat = abs(summary(lm.fit2)$coef[-1, 3])
+order1 = order(tstat, decreasing = T)
+lm.r2 <- numeric(p)
+for (j in 1:p) {
+  lm.fit <- lm(Salary~., data = Hitters2[, c(order1[1:j], ncol(data_temp))])
+  lm.r2[j] <- summary(lm.fit)$r.squared
+}
+
+plot(1:p, pca.r2, type = 'b', col = 'orange', lwd = 2, xlab = 'Variables', ylab = 'R2', ylim = c(0, 0.6))
+lines(1:p, lm.r2, col = 'blue', lwd = 2, type = 'b')
