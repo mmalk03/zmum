@@ -87,7 +87,10 @@ Default$student <- ifelse(Default$student == 'Yes', 1, 0)
 Default$default <- ifelse(Default$default == 'Yes', 1, 0)
 train <- Default[1:8000, ]
 test <- Default[8001:10000, ]
+
+l <- my_lda(train)
+
 q <- my_qda(train[, 2:4], train[, 1])
 my_qda_predict(q, test)
 
-
+# TODO verify with teacher solutions
