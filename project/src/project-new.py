@@ -27,6 +27,17 @@ def missing_data_row(data):
     return tt
 
 
+def uniqueness(data, threshold):
+    df = pd.DataFrame(data.nunique().sort_values())
+    df[df[0] < threshold][0].plot(kind='hist')
+    plt.show()
+    features = df[df[0] < threshold]
+    num_features = len(features)
+    print(f"{num_features} out of {len(data.columns)} of features have less than {threshold} unique values")
+    for f in features.index:
+        print(f"{f}: {data[f].unique()}")
+
+
 def plot_feature_scatter(df1, df2, features):
     sns.set_style('whitegrid')
     plt.figure()
@@ -92,82 +103,77 @@ train_df.corr()
 test_df.describe()
 test_df.info()
 
-# Look for missing data
-missing_data_df = missing_data(train_df)
-missing_data_df.Percent.plot(kind='hist')
+# ***** Analysis of missing data *****
+# Lets see missing data on a histogram
+missing_data_train_df = missing_data(train_df)
+missing_data_train_df['dataset'] = 'train'
+missing_data_test_df = missing_data(test_df)
+missing_data_test_df['dataset'] = 'test'
+missing_data_df = pd.concat([missing_data_train_df, missing_data_test_df])
+missing_data_df.Percent = missing_data_df.Percent.astype(int)
+
+sns.countplot(x='Percent', hue='dataset', data=missing_data_df)
 plt.show()
-# A very basic histogram shows that there is quite a lot of features which have more than 90% of missing data
-num_of_features_missing_more_than_90 = missing_data_df[missing_data_df['Percent'] > 90]
-print(f"There are exactly {len(num_of_features_missing_more_than_90)} variables which miss more than 90% of data")
+# TODO consider showing it on a barplot, where y=variable_name, x=percentage
 
-# Similar situation can be observed in the test set
-test_missing_data_df = missing_data(test_df)
-test_missing_data_df.Percent.plot(kind='hist')
-plt.show()
-# TODO show both histograms on the same plot for comparison
-
-# What about other columns with big number of na's?
-f1 = missing_data_df.Percent < 90
-f2 = missing_data_df.Percent > 30
-n2 = missing_data_df[f1 & f2]
-print(f"There are {len(n2)} variables which miss between 30% and 90% of data")
-
-# TODO before removal it would be nice to see how do they correlate with target class,
-#  maybe some of them are really important, regardless of the number of NAs
-# Lets remove them completely
-train_cols_to_drop = missing_data_df[missing_data_df['Percent'] > 30].index
-train_df = train_df.drop(columns=train_cols_to_drop)
-test_df = test_df.drop(columns=train_cols_to_drop)
+print(f"There are {sum(missing_data_train_df.Percent == 100)} columns completely filled with NAs in train dataset")
+print(f"There are {sum(missing_data_test_df.Percent == 100)} columns completely filled with NAs in test dataset")
+empty_columns_train = missing_data_train_df[missing_data_train_df.Percent == 100].index
+empty_columns_test = missing_data_test_df[missing_data_test_df.Percent == 100].index
+are_columns_the_same = list(empty_columns_train == empty_columns_test).count(False) == 0
+print(f"Names of these columns are the same in train and test dataset: {are_columns_the_same}")
+# Lets remove these features from both datasets
+train_df = train_df.drop(columns=empty_columns_train)
+test_df = test_df.drop(columns=empty_columns_test)
 print(f"After reduction the train set has {train_df.shape[1]} features")
-missing_data_df = missing_data(train_df)
-missing_data_df.Percent.plot(kind='hist')
-plt.show()
+print(f"After reduction the test set has {test_df.shape[1]} features")
 
-# Lets now analyse NAs row-wise
-missing_data_row_df = missing_data_row(train_df)
-missing_data_row_df.Percent.plot(kind='hist')
-plt.show()
-# It looks like some of the rows are missing more than 50% of the data, lets remove these rows from the training set
-# TODO it may be better to firstly fill in data in columns and than do this kind of things
-rows_to_drop = missing_data_row_df[missing_data_row_df.Percent >= 50].index
-train_df = train_df.drop(index=rows_to_drop)
+print(f"There are {sum(missing_data_train_df.Percent == 0)} columns without NAs in train dataset")
+print(f"There are {sum(missing_data_test_df.Percent == 0)} columns without NAs in test dataset")
+full_columns_train = missing_data_train_df[missing_data_train_df.Percent == 0].index
+full_columns_test = missing_data_test_df[missing_data_test_df.Percent == 0].index
+are_columns_the_same = list(empty_columns_train == empty_columns_test).count(False) == 0
+print(f"Names of these columns are the same in train and test dataset: {are_columns_the_same}")
 
-# Lets now reduce the number of features even further - we will take only those for which every row has no NAs
-md1 = missing_data(train_df)
-md1[md1.Percent <= 5].Percent.plot(kind='hist')
-plt.show()
-print(f"There are {len(md1[md1.Percent == 0])} features for which each row doesn't have any NAs")
-train_df = train_df.drop(columns=md1[md1.Percent != 0].index)
-print(f"We are left with {train_df.shape[0]} training values and {train_df.shape[1]} features")
+# Lets analyse the uniqueness of the data
+temp = train_df.describe().transpose()
+uniqueness(train_df, 40000)
+uniqueness(train_df, 5000)
+uniqueness(train_df, 1000)
+uniqueness(train_df, 100)
+uniqueness(train_df, 10)
+uniqueness(train_df, 20)
 
-# Lets do the same for the test set
-test_missing_data_row_df = missing_data_row(test_df)
-test_missing_data_row_df.Percent.plot(kind='hist')
-plt.show()
-rows_to_drop = test_missing_data_row_df[test_missing_data_row_df.Percent >= 50].index
-test_df = test_df.drop(index=rows_to_drop)
-test_df = test_df.drop(columns=md1[md1.Percent != 0].index)
-print(f"We are left with {test_df.shape[0]} test values")
+# ***** Data imputation *****
+print(f"Train set has following feature types: {set(train_df.dtypes)}")
+print(f"Test set has following feature types: {set(test_df.dtypes)}")
+# Lets replace all categorical missing values with the most frequent occurring element
+categoricality_threshold = 20  # all columns with less than 20 unique values will be treated as categorical
+df = pd.DataFrame(train_df.nunique().sort_values())
+categorical_features = set(list(df[df[0] < categoricality_threshold].index) + list(train_df.select_dtypes(['O']).columns))
+print(f"Number of features classified as categorical is {len(categorical_features)}")
+for feature in categorical_features:
+    most_common_value = train_df[feature].value_counts().index[0]
+    train_df.loc[train_df[feature].isna(), feature] = most_common_value
+    # TODO should NAs from the test set also be removed?
 
-len(train_df.transpose().index)
-len(test_df.transpose().index)
+category_features = train_df.select_dtypes('O').columns
+train_df[category_features ] = train_df[category_features ].astype('category')
+test_df[category_features ] = test_df[category_features ].astype('category')
 
-for train, test in zip(train_df.transpose().index, test_df.transpose().index):
-    if train != test:
-        print(f"{train} : {test}")
-
-train_df.describe()
-train_df.info()
-train_df.corr()
-test_df.describe()
-test_df.info()
+# Lets replace all numerical missing values with median of given column
+numerical_features = set(train_df.columns[:-1]) - categorical_features
+print(f"Number of features classified as numerical is {len(numerical_features)}")
+for feature in numerical_features:
+    train_df.loc[train_df[feature].isna(), feature] = train_df[feature].median()
+    # TODO should NAs from the test set also be removed?
 
 # Lets present some of the features on scatter plots
 features = list(train_df.transpose().index[0:16])
+plot_feature_scatter(train_df[0:len(test_df)], test_df, features)
+
 plot_feature_scatter(train_df[:1000], test_df[:1000], features)
 features = list(train_df.transpose().index[16:32])
-plot_feature_scatter(train_df[:1000], test_df[:1000], features)
-features = list(train_df.transpose().index[32:-1])
 plot_feature_scatter(train_df[:1000], test_df[:1000], features)
 
 # Density plots of features
@@ -242,18 +248,18 @@ test_df[categorical_features] = test_df[categorical_features].astype('category')
 features = train_df.select_dtypes(['float64', 'int64', 'category']).columns.values[:-1]
 target = train_df['class']
 params = {
-    #'num_leaves': 6,
-    # 'max_bin': 63,
-    # 'min_data_in_leaf': 45,
-    # 'learning_rate': 0.01,
-    # 'min_sum_hessian_in_leaf': 0.000446,
-    # 'bagging_fraction': 0.55,
-    # 'bagging_freq': 5,
-    # 'max_depth': 14,
+    'num_leaves': 6,
+    'max_bin': 63,
+    'min_data_in_leaf': 45,
+    'learning_rate': 0.01,
+    'min_sum_hessian_in_leaf': 0.000446,
+    'bagging_fraction': 0.55,
+    'bagging_freq': 5,
+    'max_depth': 14,
     'save_binary': True,
     'seed': 31452,
     'feature_fraction_seed': 31415,
-    # 'feature_fraction': 0.51,
+    'feature_fraction': 0.51,
     'bagging_seed': 31415,
     'drop_seed': 31415,
     'data_random_seed': 31415,
@@ -288,7 +294,7 @@ for fold_, (train_idx, valid_idx) in enumerate(folds.split(train_df.values, targ
     feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 
     predictions += clf.predict(test_df[features], num_iteration=clf.best_iteration) / folds.n_splits
-
+# TODO check how this model works for rows which should be classified as 1
 print("CV score: {:<8.5f}".format(roc_auc_score(target, oof)))
 
 # Lets check the feature importance
