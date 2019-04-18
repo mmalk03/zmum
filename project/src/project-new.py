@@ -4,11 +4,20 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from pandas import get_dummies
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest, RFE
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
+from xgboost import XGBRegressor
+
+
+def save_results(y_test, model_name):
+    author_name = 'MIKMAŁ'
+    filename = f"../data/{author_name}-{model_name}.txt"
+    with open(filename, 'w') as f:
+        [f.write(f"{y}\n") for y in [f"\"{author_name}\""] + y_test]
 
 
 def missing_data(data):
@@ -194,7 +203,7 @@ print(f"Number of features classified as categorical is {len(categorical_feature
 uniquality_threshold = 100
 features_to_remove = [feature for feature in categorical_features
                       if train_uniqueness_df.transpose()[feature][0] > uniquality_threshold]
-print(f"There are {len(features_to_remove)} categorical features which have more than {uniquality_threshold} unique values")
+print(f"There are {len(features_to_remove)} categorical features having more than {uniquality_threshold} unique values")
 train_df = train_df.drop(columns=features_to_remove)
 test_df = test_df.drop(columns=features_to_remove)
 [categorical_features.remove(feature) for feature in features_to_remove]
@@ -326,9 +335,17 @@ feature_columns = pd.DataFrame(x_train.columns)
 feature_importances_df = pd.concat([feature_columns, feature_importances], axis=1)
 feature_importances_df.columns = ['Feature', 'Importance']
 
-print(feature_importances_df.nlargest(10, 'Importance'))
-feature_importances_df.nlargest(200).plot(kind='barh')
+print(feature_importances_df.nlargest(20, 'Importance'))
+feature_importances_df.nlargest(200, 'Importance').plot(kind='barh')
 plt.show()
+feature_importances_df.nlargest(100, 'Importance').plot(kind='barh')
+plt.show()
+feature_importances_df.nlargest(50, 'Importance').plot(kind='barh')
+plt.show()
+feature_importances_df.nlargest(32, 'Importance').plot(kind='barh')
+plt.show()
+# 32 features with the highest importance will be chosen
+selected_features = list(feature_importances_df.nlargest(32, 'Importance').Feature)
 
 # Correlation matrix with heatmap
 x_and_y_train = pd.concat([x_train, y_train], axis=1)
@@ -338,20 +355,43 @@ sns.heatmap(x_and_y_train[top_corr_features].corr(), cmap="RdYlGn")
 plt.show()
 # Conclusion: there aren't any features clearly correlated with 'class'
 
-# Recursive Feature Elimination using Logistic Regression
-model_logistic_regression = LogisticRegression()
-recursive_feature_elimination = RFE(model_logistic_regression, 20)
-rfe_fit = recursive_feature_elimination.fit(x_train, y_train)
-print(f"Recursive Feature Elimination selected {rfe_fit.n_features_} features")
-selected_features = x_train.columns[rfe_fit.support_]
-print(f"Selected features: {selected_features}")
-print(f"Feature ranking: {rfe_fit.ranking_}")
-# Conclusion: only features created from categorical ones were chosen - seems a bit suspicious
-# Maybe performing RFE on some other model than Logistic Regression would yield better results
+# Principal Component Analysis
+pca = PCA(n_components=50)
+pca_fit = pca.fit(x_train)
+print(f"Explained variance: {pca_fit.explained_variance_ratio_}")
+print(pca_fit.components_)
+# Conclusion: ??
 
-# TODO select the features in some way (probably using feature importance of some tree classifier)
+# Recursive Feature Elimination using Logistic Regression (takes a lot of time)
+use_rfe = False
+if use_rfe:
+    model_logistic_regression = LogisticRegression()
+    recursive_feature_elimination = RFE(model_logistic_regression, 20)
+    rfe_fit = recursive_feature_elimination.fit(x_train, y_train)
+    print(f"Recursive Feature Elimination selected {rfe_fit.n_features_} features")
+    selected_features = x_train.columns[rfe_fit.support_]
+    print(f"Selected features: {selected_features}")
+    print(f"Feature ranking: {rfe_fit.ranking_}")
+    # Conclusion: only features created from categorical ones were chosen - seems a bit suspicious
+    # Maybe performing RFE on some other model than Logistic Regression would yield better results
 
 # ********** MODEL **********
+
+# XGBoost
+
+xgboost_model = XGBRegressor()
+xgboost_model.fit(x_train, y_train)
+
+y_test_predictions = xgboost_model.predict(x_test)
+save_results(list(y_test_predictions), 'XGBoost')
+
+y_train_pred = xgboost_model.predict(x_train)
+auc = roc_auc_score(y_train, y_train_pred)
+print(f"auc on train set: {auc}")
+
+y_test_pred_sorted = list(reversed(sorted(y_test_predictions)))
+chosen_results = y_test_pred_sorted[:round(0.1 * len(y_test_pred_sorted))]
+print(f"10% of predicted probabilities are greater than {chosen_results[-1]}")
 
 # LightGBM
 
@@ -425,10 +465,6 @@ print(f"{len(predictions[predictions > 0.5])}/{len(predictions)} rows were predi
 test_predictions = clf.predict(x_test, num_iteration=clf.best_iteration) / folds.n_splits
 print(f"{len(test_predictions[test_predictions > 0.5])}/{len(test_predictions)} rows were predicted as 1")
 
-
-
-
-
 # Random Forest and Gradient Boosting
 x_train = x_train.drop('class', axis=1)
 y_train = x_train['class']
@@ -436,15 +472,15 @@ y_train = x_train['class']
 rf_model = RandomForestClassifier(
     n_estimators=1200,
     criterion='entropy',
-    max_depth=None,   # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
+    max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
     min_samples_split=100,
     min_samples_leaf=50,
     min_weight_fraction_leaf=0.0,
-    max_features=None,   # number of features to consider when looking for the best split; None: max_features=n_features
-    max_leaf_nodes=None,   # None: unlimited number of leaf nodes
+    max_features=None,  # number of features to consider when looking for the best split; None: max_features=n_features
+    max_leaf_nodes=None,  # None: unlimited number of leaf nodes
     bootstrap=True,
-    oob_score=True,   # estimate Out-of-Bag Cross Entropy
-    class_weight=None,    # our classes are skewed, but but too skewed
+    oob_score=True,  # estimate Out-of-Bag Cross Entropy
+    class_weight=None,  # our classes are skewed, but but too skewed
     random_state=123,
     verbose=0,
     warm_start=False)
@@ -452,27 +488,24 @@ rf_model.fit(X=pd.get_dummies(x_train), y=y_train)
 
 boost_model = GradientBoostingClassifier(
     n_estimators=2400,
-    loss='deviance',   # a.k.a Cross Entropy in Classification
-    learning_rate=.01,   # shrinkage parameter
+    loss='deviance',  # a.k.a Cross Entropy in Classification
+    learning_rate=.01,  # shrinkage parameter
     subsample=1.,
     min_samples_split=200,
     min_samples_leaf=100,
     min_weight_fraction_leaf=0.0,
-    max_depth=10,   # maximum tree depth / number of levels of interaction
+    max_depth=10,  # maximum tree depth / number of levels of interaction
     init=None,
     random_state=123,
-    max_features=None,   # number of features to consider when looking for the best split; None: max_features=n_features
+    max_features=None,  # number of features to consider when looking for the best split; None: max_features=n_features
     verbose=0,
-    max_leaf_nodes=None,   # None: unlimited number of leaf nodes
+    max_leaf_nodes=None,  # None: unlimited number of leaf nodes
     warm_start=False)
 boost_model.fit(X=get_dummies(x_train), y=y_train)
 
 # TODO firstly concatenate train and test dfs, convert them to dummies, and then split so that they have the same columns
 rf_train_pred_probs = rf_model.predict_proba(X=get_dummies(x_train))
 rf_test_pred_probs = rf_model.predict_proba(X=get_dummies(x_test))
-
-
-
 
 x = x_train
 for feature in x.columns:
