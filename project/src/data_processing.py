@@ -57,8 +57,10 @@ def show_missing_data_histograms(train_df, test_df):
     missing_data_df = pd.concat([missing_data_train_df, missing_data_test_df])
     missing_data_df.Percent = missing_data_df.Percent.astype(int)
 
+    fig = plt.figure()
     sns.countplot(x='Percent', hue='dataset', data=missing_data_df)
     plt.show()
+    fig.savefig('missing-data.png')
     # TODO consider showing it on a barplot, where y=variable_name, x=percentage
 
 
@@ -200,8 +202,8 @@ def prepare_data():
     # basic_data_frame_analysis(train_df)
     # basic_data_frame_analysis(test_df)
 
-    # show_missing_data_histograms(train_df, test_df)
-    # analyse_columns_without_nas(train_df, test_df)
+    show_missing_data_histograms(train_df, test_df)
+    analyse_columns_without_nas(train_df, test_df)
     remove_columns_completely_filled_with_nas(train_df, test_df)
     remove_columns_with_nas(train_df, test_df)
 

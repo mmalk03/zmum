@@ -1,5 +1,6 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
+from sklearn.metrics import roc_curve
 
 
 def plot_feature_scatter(df1, df2, features):
@@ -49,4 +50,11 @@ def plot_new_feature_distribution(df1, df2, label1, label2, features):
         locs, labels = plt.xticks()
         plt.tick_params(axis='x', which='major', labelsize=8)
         plt.tick_params(axis='y', which='major', labelsize=8)
+    plt.show()
+
+
+def plot_roc_curve(y, y_pred):
+    fpr, tpr, thresholds = roc_curve(y, y_pred)
+    plt.plot([0, 1], [0, 1], linestyle='--')
+    plt.plot(fpr, tpr)
     plt.show()
