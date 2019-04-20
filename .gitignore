@@ -1,5 +1,20 @@
+# RStudio
 .Rhistory
 .RData
-.idea/
-__pycache__/
 
+ # PyCharm
+.idea/
+
+# LaTeX
+*.aux
+*.out
+*.log
+*.synctex.gz
+*.bbl
+*.blg
+*.toc
+*.lof
+*.lot
+
+# Python
+__pycache__/
