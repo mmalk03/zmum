@@ -91,7 +91,7 @@ def remove_columns_completely_filled_with_nas(train_df, test_df):
     print(f"After reduction the test set has {test_df.shape[1]} features")
 
 
-def remove_columns_with_nas(train_df, test_df, removal_threshold=20):
+def remove_columns_with_nas(train_df, test_df, removal_threshold=90):
     missing_data_train_df = missing_data(train_df)
     missing_data_test_df = missing_data(test_df)
     columns_to_remove_train = list(missing_data_train_df[missing_data_train_df.Percent >= removal_threshold].index)

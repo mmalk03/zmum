@@ -5,3 +5,5 @@ seaborn
 sklearn
 lightgbm
 xgboost
+imbalanced-learn
+catboost
