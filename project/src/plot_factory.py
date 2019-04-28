@@ -1,6 +1,6 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
 
 
 def plot_feature_scatter(df1, df2, features):
@@ -53,8 +53,13 @@ def plot_new_feature_distribution(df1, df2, label1, label2, features):
     plt.show()
 
 
-def plot_roc_curve(y, y_pred):
-    fpr, tpr, thresholds = roc_curve(y, y_pred)
+def plot_roc_curve(results):
+    fig = plt.figure()
     plt.plot([0, 1], [0, 1], linestyle='--')
-    plt.plot(fpr, tpr)
+    for (model_name, y, y_pred) in results:
+        fpr, tpr, thresholds = roc_curve(y, y_pred)
+        auc = round(roc_auc_score(y, y_pred), 4)
+        plt.plot(fpr, tpr, label=f"{model_name} AUC: {auc}")
+    plt.legend(loc="lower right")
     plt.show()
+    fig.savefig('roc-comparison.png')

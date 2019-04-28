@@ -14,6 +14,7 @@ from xgboost import XGBClassifier
 
 import data_processing as data_processing
 import data_repository as repository
+import plot_factory
 
 
 def evaluate(model, x_test, y_test):
@@ -97,26 +98,28 @@ def get_catboost_important_features(model):
 def main():
     x, y, x_test = data_processing.prepare_data()
     x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, shuffle=False)
-
     neg_to_pos_ratio = round(len(y.loc[y == 0]) / len(y.loc[y == 1]))
 
+    models = {
+        'XGBoost': XGBClassifier(random_state=42),
+        'XGBoost balanced': XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
+        'LightGBM': LGBMClassifier(random_state=42),
+        'LightGBM balanced': LGBMClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
+        'CatBoost': CatBoostClassifier(random_state=42),
+        'CatBoost balanced': CatBoostClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
+        'AdaBoost': AdaBoostClassifier(random_state=42),
+        'GradientBoosting': GradientBoostingClassifier(random_state=42),
+        'RandomForest': RandomForestClassifier(random_state=42),
+        'BalancedRandomForest': BalancedRandomForestClassifier(random_state=42),
+    }
     scores = {}
-    models = [
-        XGBClassifier(random_state=42),
-        XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
-        LGBMClassifier(random_state=42),
-        LGBMClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
-        CatBoostClassifier(random_state=42),
-        CatBoostClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
-        AdaBoostClassifier(random_state=42),
-        RandomForestClassifier(random_state=42),
-        GradientBoostingClassifier(random_state=42),
-        BalancedRandomForestClassifier(random_state=42),
-    ]
-    for i, model in enumerate(models):
+    results = []
+    for name, model in models.items():
         model.fit(x_train, y_train)
-        scores[f"{model.__class__.__name__}-{i}"] = get_scores(model, x_val, y_val)
+        results.append((name, y_val, model.predict_proba(x_val)[:, 1]))
+        scores[name] = get_scores(model, x_val, y_val)
     scores_df = pd.DataFrame(scores).transpose()
+    plot_factory.plot_roc_curve(results)
 
     # Feature importance
     important_features = [
@@ -132,27 +135,31 @@ def main():
 
     x_train_small = x_train.filter(unique_features)
     x_val_small = x_val.filter(unique_features)
-    scores2 = {}
-    for i, model in enumerate(models):
+    scores_fi = {}
+    results_fi = []
+    for name, model in models.items():
         model.fit(x_train_small, y_train)
-        scores2[f"{model.__class__.__name__}-{i}"] = get_scores(model, x_val_small, y_val)
-    scores2_df = pd.DataFrame(scores2).transpose()
+        results_fi.append((name, y_val, model.predict_proba(x_val)[:, 1]))
+        scores_fi[name] = get_scores(model, x_val_small, y_val)
+    scores_fi_df = pd.DataFrame(scores_fi).transpose()
+    plot_factory.plot_roc_curve(results)
 
     # Cross validation
-    model = XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42)
+    models_cv = {
+        'XGBoost balanced': XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42),
+    }
+    scores_cv = {}
+    results_cv = []
     kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-    for fold_, (train_index, test_index) in enumerate(kfold.split(x)):
-        x_t, x_v = x.iloc[train_index], x.iloc[test_index]
-        y_t, y_v = y.iloc[train_index], y.iloc[test_index]
-        model.fit(x_t, y_t)
-        scores[f"{model.__class__.__name__}-{fold_}b"] = get_scores(model, x_v, y_v)
-    scores_df = pd.DataFrame(scores).transpose()
-
-    model = XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42)
-    model.fit(x, y)
-    best_model = model
-    y_test_predictions = best_model.predict_proba(x_test)
-    repository.save_results(list(y_test_predictions[:, 1]), best_model.__class__.__name__)
+    for name, model in models_cv.items():
+        for fold_, (train_index, test_index) in enumerate(kfold.split(x)):
+            x_t, x_v = x.iloc[train_index], x.iloc[test_index]
+            y_t, y_v = y.iloc[train_index], y.iloc[test_index]
+            model.fit(x_t, y_t)
+            results_cv.append((f"{name}-{fold_}", y_val, model.predict_proba(x_val)[:, 1]))
+            scores_cv[f"{name}-{fold_}"] = get_scores(model, x_v, y_v)
+    scores_cv_df = pd.DataFrame(scores_cv).transpose()
+    plot_factory.plot_roc_curve(results_cv)
 
     # TODO do some GridSearch for XGBoost and submit the results
 
@@ -182,6 +189,13 @@ def main():
         return_train_score=True)
     search.fit(x_train, y_train)
     report_best_scores(search.cv_results_, 1)
+
+    # Final model
+    # TODO use XGB after hyperparameter tuning
+    best_model = XGBClassifier(scale_pos_weight=neg_to_pos_ratio, random_state=42)
+    best_model.fit(x, y)
+    y_test_predictions = best_model.predict_proba(x_test)
+    repository.save_results(list(y_test_predictions[:, 1]), best_model.__class__.__name__)
 
 
 if __name__ == '__main__':
