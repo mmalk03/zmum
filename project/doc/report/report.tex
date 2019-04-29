@@ -9,6 +9,7 @@
 \usepackage{graphicx}
 \usepackage{subfig}
 \usepackage{fancyvrb}
+\usepackage{wrapfig}
 
 \textwidth\paperwidth
 \advance\textwidth -45mm
@@ -31,7 +32,7 @@ Projekt 1
 Mikołaj Małkiński \\
 \texttt{malkinskim@student.mini.pw.edu.pl}
 }
-\date{20 Apr 2019}
+\date{\today}
 
 \begin{document}
     \maketitle
@@ -41,19 +42,19 @@ Mikołaj Małkiński \\
     \subsection{Brakujące dane}
     Zbiór danych zawiera wiele kolumn które nie są w pełni wypełnione danymi.
     Analiza wykazała, że tylko 20 kolumn posiadały wszystkie wartości.
-    Wykres~\ref{fig:missing-data} przedstawia zależność między stopniem braku danych a liczbą kolumn.
+    Rysunek~\ref{fig:missing-data} przedstawia zależność między stopniem braku danych a liczbą kolumn.
     Istnieje kilka możliwych podejść które można zastosować w tym przypadku.
     Po pierwsze, można kompletnie zignorować i wybrać model który jest w stanie sam odpowiednio obsłużyć luki w zbiorze.
     Przykładem takiego modelu jest \textit{XGBoost}.
     Jednakże, nie wszystkie algorytmy do klasyfikacji są przygotowane na braki w danych,
     Dlatego, aby móc porównać działanie kilku modeli na tym samym zbiorze podjęto decyzję o wypełnieniu brakujących danych.
 
-    \begin{figure}[!h]
+    \begin{wrapfigure}{r}{0.5\linewidth}
         \centering
-        \includegraphics[width=\textwidth]{../doc/images/missing-data.png}
+        \includegraphics[width=\linewidth]{../images/missing-data.png}
         \caption{Liczba kolumn posiadających dany procent brakujących danych z podziałem na zbiór treningowy i testowy}
         \label{fig:missing-data}
-    \end{figure}
+    \end{wrapfigure}
 
     Niektóre z kolumn posiadały nawet ponad 90\% brakująych danych.
     Nie mając żadnych informacji o zbiorze danych oraz nie wiedząc co dana kolumna reprezentuje, ciężko stwierdzić z czego wynika taki duży brak.
@@ -62,8 +63,8 @@ Mikołaj Małkiński \\
     Resztę poddano imputacji.
 
     Kolumny w zbiorze można podzielić na 2 rodzaje: \textit{numeryczne} i \textit{kategoryczne}.
-    Aby wypełnić pierwszy z nich, brakujące dane w każdej kolumnie wypełniono jej medianą.
-    Oczywiście w innych przypadkach mogłyby zostać także inne funkcje, takie jak średnia lub moda.
+    Aby wypełnić pierwsze z nich, brakujące dane w każdej kolumnie wypełniono jej medianą.
+    Oczywiście w innych przypadkach mogłyby zostać użyte także inne funkcje, takie jak średnia lub moda.
     W przypadku kolumn kategorycznych, dodano nową kategorię: \textit{unknown}, która wypełniła braki w tych kolumnach.
 
     \subsection{Unikalność danych}
@@ -85,31 +86,32 @@ Mikołaj Małkiński \\
     \section{Klasyfikacja}
 
     \subsection{Użyte modele}
+
+    \begin{wrapfigure}{r}{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../images/roc-comparison.png}
+        \caption{Porównanie krzywych ROC podstawowych modeli klasyfikacyjnych}
+        \label{fig:roc-comparison}
+    \end{wrapfigure}
+
     Po odpowiednim przygotowaniu danych, w prosty sposób można sprawdzić jakość różnych modeli z domyślnymi parametrami.
     Zbiór danych został podzielony na treningowy i walidacyjny w stosunku 4:1.
     Zbadano jakość następujących klasyfikatorów: \textit{XGBoost}~\cite{xgboost}, \textit{XGBoost balanced} - XGBoost biorący pod uwagę balans klas, \textit{LightGBM}~\cite{lightgbm}, \textit{LightGBM balanced} - LightGBM biorący pod uwagę balans klas, \textit{CatBoost}~\cite{catboost}, \textit{CatBoost balanced} - CatBoost biorący pod uwagę balans klas, \textit{AdaBoost}~\cite{adaboost}, \textit{GradientBoosting}~\cite{gradient-boosting}, \textit{RandomForest}~\cite{random-forest}, \textit{BalancedRandomForest}~\cite{balanced-random-forest}, \textit{ExtraTrees}~\cite{extra-trees}.
 
-    Krzywe ROC tych modeli zaprezentowane są na obrazku~\ref{fig:roc-comparison}.
-    Wyraźnie widać że wszystkie modele z wyjątkiem lasu losowego osiągnęły porównywalne wyniki.
-    Dokładniejsze statystki przedstawione są w tabeli~\ref{tab:score-comparison}.
-    Porównano w niej takie metryki jak: AUC, dokładność, dokładność@10 (procent obserwacji poprawnie zklasyfikowanych jako należące do klasy 1 z 10\% najwyżej ocenionych obserwacji), F1, precyzja oraz czułość.
+    Krzywe ROC tych modeli zaprezentowane są na Rysunku~\ref{fig:roc-comparison}.
+    Wyraźnie widać że wszystkie modele z wyjątkiem RandomForest (las losowy) i ExtraTrees (ekstremalnie losowe drzewa) osiągnęły porównywalne wyniki.
+    Dokładniejsze statystki przedstawione są w Tablicy~\ref{tab:score-comparison}.
+    Porównano w niej takie metryki jak: AUC, dokładność, precyzja@10 (procent obserwacji poprawnie zklasyfikowanych jako należące do klasy 1 z 10\% najwyżej ocenionych obserwacji), F1, precyzja oraz czułość.
     Należy pamiętać że analizowany zbiór danych ma silnie niezbalansowane klasy, dlatego porównując modele trzeba wziąć pod uwagę wszystkie przedstawione metryki.
 
     Warto porównać wyniki modeli XGBoost, LightGBM i CatBoost w standardowej konfiguracji z konfiguracją mająca na celu zmniejszyć problem nie zbalansowanych klas (oznaczone przez sufiks \textit{balanced}).
     Dla każdego z tych modeli, konfiguracja zbalansowana znacząco poprawiła czułość modelu, kosztem precyzji, ale pogorszyła też wartość metryki F1.
-    Nie można jednak jednoznacznie stwierdzić która z tych konfiguracji jest lepsza dla omawianego zbioru danych ponieważ metryka która służy do ostatecznej ewaluacji (dokładność@10) jest niemalże identyczna w wszytkich przypadkach.
-
-    \begin{figure}[!h]
-        \centering
-        \includegraphics[width=\textwidth]{../doc/images/roc-comparison.png}
-        \caption{Porównanie krzywych ROC podstawowych modeli klasyfikacyjnych}
-        \label{fig:roc-comparison}
-    \end{figure}
+    Nie można jednak jednoznacznie stwierdzić która z tych konfiguracji jest lepsza dla omawianego zbioru danych ponieważ metryka która służy do ostatecznej ewaluacji (precyzja@10) jest niemalże identyczna w wszytkich przypadkach.
 
     \begin{table}
         \hspace*{-1cm}
         \begin{tabular}{l|*{6}{c}}
-            & AUC & Dokładność & Dokładność@10 & F1 & Precyzja & Czułość \\
+            & AUC & Dokładność & Precyzja@10 & F1 & Precyzja & Czułość \\
             \hline
             XGBoost & \textbf{0.8563} & \textbf{0.9516} & \textbf{0.3600} & \textbf{0.5442} & \textbf{0.7524} & 0.4262 \\
             XGBoost balanced & 0.8555 & 0.7742 & 0.3588 & 0.3043 & 0.1923 & 0.7288 \\
@@ -157,25 +159,26 @@ Mikołaj Małkiński \\
     Wzięto pod uwagę następujące parametry modelu: stosunek klas, maksymalna głębokość drzew wchodzących w skład komitetu (base learners), współczynnik uczenia, liczbę członków komitetu oraz współczynniki próbkowania.
     Dla każdej kombinacji tych parametrów sprawdzono jakość modelu metodą kroswalidacji na 3 różnych próbach.
     Aby osiągnąć bardziej wiarygodne wyniki warto zwiększyć liczbę prób do co najmniej 5, jednak ze względu na długi czas obliczeń nie było takiej możliwości.
-    Zostały wybrane te parametry, dla których model osiągnął najwyższą wartość metryki dokładność@10.
+    Zostały wybrane te parametry, dla których model osiągnął najwyższą wartość metryki precyzja@10.
 
     \subsection{Kroswalidacja}
     Dla dobranych hiperparametrów została przeprowadzona ostateczna ocena jakości modelu.
     Ponownie użyto metody kroswalidacji dla 5 różnych prób.
     Wyniki modelu dla każdej próby były do siebie zbliżone.
-    Dokładne wyniki są przedstawione w tabeli~\ref{tab:xgb-score-comparison}.
-    Średnia wartość metryki dokładność@10 wyniosła 40.27\%.
+    Dokładne wyniki są przedstawione w Tablicy~\ref{tab:xgb-score-comparison}.
+    Średnia wartość metryki precyzja@10 wyniosła 40.27\%.
 
     %    \begin{figure}[!h]
     %        \centering
-    %        \includegraphics[width=\textwidth]{../doc/images/xgb-roc-comparison.png}
+    %        \includegraphics[width=\textwidth]{../images/xgb-roc-comparison.png}
     %        \caption{Porównanie krzywych ROC zoptymalizowanego modelu XGBoost używając kroswalidacji}
     %        \label{fig:xgb-roc-comparison}
     %    \end{figure}
 
     \begin{table}
+        \hspace*{1cm}
         \begin{tabular}{l|*{6}{c}}
-            & AUC & Dokładność & Dokładność@10 & F1 & Precyzja & Czułość \\
+            & AUC & Dokładność & Precyzja@10 & F1 & Precyzja & Czułość \\
             \hline
             Próba 1 & 0.8605 & 0.7779 & 0.4000 & 0.3210 & 0.2071 & 0.7131 \\
             Próba 2 & 0.8757 & 0.7960 & 0.4263 & 0.3625 & 0.2395 & 0.7448 \\
@@ -195,7 +198,6 @@ Mikołaj Małkiński \\
     Warto zauważyć, że wyniki zastosowanych modeli klasyfikacyjnych były do siebie zbliżone, a optymalizacja hiperparametrów dla wybranego modelu (XGBoost) przyniosła poprawę jego jakości zbliżoną do 4\%.
     Dlatego przypuszcza się że główną przeszkodą w osiągnięciu wyższej dokładności jest słaba znajomość zbioru danych i ograniczone możliwości jego analizy.
 
-    \newpage
     \bibliographystyle{plain}
     \bibliography{report.bib}
 
