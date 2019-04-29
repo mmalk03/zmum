@@ -60,8 +60,6 @@ def show_missing_data_histograms(train_df, test_df):
     fig = plt.figure()
     sns.countplot(x='Percent', hue='dataset', data=missing_data_df)
     plt.show()
-    fig.savefig('missing-data.png')
-    # TODO consider showing it on a barplot, where y=variable_name, x=percentage
 
 
 def analyse_columns_without_nas(train_df, test_df):
@@ -199,15 +197,15 @@ def one_hot_encoding(train_df, test_df):
 def prepare_data():
     train_df = repository.load_train_dataset()
     test_df = repository.load_test_dataset()
-    # basic_data_frame_analysis(train_df)
-    # basic_data_frame_analysis(test_df)
+    basic_data_frame_analysis(train_df)
+    basic_data_frame_analysis(test_df)
 
     show_missing_data_histograms(train_df, test_df)
     analyse_columns_without_nas(train_df, test_df)
     remove_columns_completely_filled_with_nas(train_df, test_df)
     remove_columns_with_nas(train_df, test_df)
 
-    # analyse_uniqueness(train_df)
+    analyse_uniqueness(train_df)
 
     remove_columns_with_1_unique_value(train_df, test_df)
 

@@ -10,6 +10,7 @@
 \usepackage{subfig}
 \usepackage{fancyvrb}
 \usepackage{wrapfig}
+\usepackage[toc,page]{appendix} % for appendix
 
 \textwidth\paperwidth
 \advance\textwidth -45mm
@@ -22,6 +23,11 @@
 \setlength\textheight{45\baselineskip}
 \addtolength\textheight{\topskip}
 \marginparwidth 15mm
+
+\addto\captionspolish{ % rename Appendices title to Dodatki
+\renewcommand\appendixname{Dodatek}
+\renewcommand\appendixpagename{Dodatki}
+}
 
 
 \title{
@@ -83,16 +89,16 @@ Mikołaj Małkiński \\
     Dlatego, każdą kolumnę przekształcono w \textit{n} nowych kolumn, gdzie \textit{n} to liczba kategorii dla danej kolumny.
     Proces ten nazywany jest \textit{One-hot encoding}.
 
+    \subsection{Porównawcza analiza danych}
+    Kolejnym krokiem aby lepiej zrozumieć zbiór danych było porównanie rozkładów cech ze względu na zbiór.
+    Wizualizacja zaprezentowana w Dodatku~\ref{appendix:rozklad-cech-numerycznych-zbiory} wykazała że dane niewątpliwie pochodzą z tego samego rozkładu.
+    Porównano także rozkłady zmiennych z podziałem na klasę.
+    Wyniki są przedstawione w Dodatku~\ref{appendix:rozklad-cech-numerycznych-klasy}.
+    Można wyraźnie zaobserwować że zmienne takie jak Var38, Var73, Var126, Var153 różnią się w zależności od klasy.
+
     \section{Klasyfikacja}
 
     \subsection{Użyte modele}
-
-    \begin{wrapfigure}{r}{0.5\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{../images/roc-comparison.png}
-        \caption{Porównanie krzywych ROC podstawowych modeli klasyfikacyjnych}
-        \label{fig:roc-comparison}
-    \end{wrapfigure}
 
     Po odpowiednim przygotowaniu danych, w prosty sposób można sprawdzić jakość różnych modeli z domyślnymi parametrami.
     Zbiór danych został podzielony na treningowy i walidacyjny w stosunku 4:1.
@@ -103,6 +109,13 @@ Mikołaj Małkiński \\
     Dokładniejsze statystki przedstawione są w Tablicy~\ref{tab:score-comparison}.
     Porównano w niej takie metryki jak: AUC, dokładność, precyzja@10 (procent obserwacji poprawnie zklasyfikowanych jako należące do klasy 1 z 10\% najwyżej ocenionych obserwacji), F1, precyzja oraz czułość.
     Należy pamiętać że analizowany zbiór danych ma silnie niezbalansowane klasy, dlatego porównując modele trzeba wziąć pod uwagę wszystkie przedstawione metryki.
+
+    \begin{wrapfigure}{r}{0.5\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{../images/roc-comparison.png}
+        \caption{Porównanie krzywych ROC podstawowych modeli klasyfikacyjnych}
+        \label{fig:roc-comparison}
+    \end{wrapfigure}
 
     Warto porównać wyniki modeli XGBoost, LightGBM i CatBoost w standardowej konfiguracji z konfiguracją mająca na celu zmniejszyć problem nie zbalansowanych klas (oznaczone przez sufiks \textit{balanced}).
     Dla każdego z tych modeli, konfiguracja zbalansowana znacząco poprawiła czułość modelu, kosztem precyzji, ale pogorszyła też wartość metryki F1.
@@ -200,5 +213,44 @@ Mikołaj Małkiński \\
 
     \bibliographystyle{plain}
     \bibliography{report.bib}
+
+    \newpage
+    \begin{appendices}
+
+        \section{Rozkład cech numerycznych z podziałem na zbiór}\label{appendix:rozklad-cech-numerycznych-zbiory}
+
+        \begin{figure}[!h]
+            \centering
+            \includegraphics[width=0.9\textwidth]{../images/feature-distribution-0-20-train-test.png}
+            \caption{Rozkład cech numerycznych z podziałem na zbiór}
+        \end{figure}
+
+        \newpage
+
+        \begin{figure}[!h]
+            \centering
+            \includegraphics[width=0.9\textwidth]{../images/feature-distribution-20-40-train-test.png}
+            \caption{Rozkład cech numerycznych z podziałem na zbiór}
+        \end{figure}
+
+        \newpage
+
+        \section{Rozkład cech numerycznych z podziałem na klasę}\label{appendix:rozklad-cech-numerycznych-klasy}
+
+        \begin{figure}[!h]
+            \centering
+            \includegraphics[width=0.9\textwidth]{../images/feature-distribution-0-20.png}
+            \caption{Rozkład cech numerycznych z podziałem na klasę}
+        \end{figure}
+
+        \newpage
+
+        \begin{figure}[!h]
+            \centering
+            \includegraphics[width=0.9\textwidth]{../images/feature-distribution-20-40.png}
+            \caption{Rozkład cech numerycznych z podziałem na klasę}
+        \end{figure}
+
+    \end{appendices}
 
 \end{document}

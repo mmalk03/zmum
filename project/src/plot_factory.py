@@ -21,12 +21,12 @@ def plot_feature_scatter(df1, df2, features):
 def plot_feature_distribution(df1, df2, label1, label2, features):
     sns.set_style('whitegrid')
     plt.figure()
-    fig, ax = plt.subplots(5, 5, figsize=(18, 18))
+    fig, ax = plt.subplots(5, 4, figsize=(18, 18))
 
     i = 0
     for feature in features:
         i += 1
-        plt.subplot(5, 5, i)
+        plt.subplot(5, 4, i)
         sns.kdeplot(df1[feature], bw=0.5, label=label1)
         sns.kdeplot(df2[feature], bw=0.5, label=label2)
         plt.xlabel(feature, fontsize=9)

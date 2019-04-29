@@ -20,16 +20,16 @@ plot_factory.plot_feature_scatter(x_train[:1000], x_test[:1000], features)
 t0 = x_train.loc[y_train == 0]
 t1 = x_train.loc[y_train == 1]
 features = x_train.select_dtypes(['float64', 'int64']).columns[:-1]
-features = features[0:25]
-plot_factory.plot_feature_distribution(t0, t1, '0', '1', features)
+plot_factory.plot_feature_distribution(t0, t1, '0', '1', features[0:20])
+plot_factory.plot_feature_distribution(t0, t1, '0', '1', features[20:40])
 
 # We can observe that some of the features are clearly different depending on 'class'
-# Those features are: Var38, Var57, Var73, Var76, Var133, Var134, Var153
-# Especially Var153
+# Those features are: Var38, Var73, Var126, Var153
 
 # Lets now compare features from train and test data sets
 features = x_train.select_dtypes(['float64', 'int64']).columns[:-1]
-plot_factory.plot_feature_distribution(x_train, x_test, 'train', 'test', features[0:25])
+plot_factory.plot_feature_distribution(x_train, x_test, 'train', 'test', features[0:20])
+plot_factory.plot_feature_distribution(x_train, x_test, 'train', 'test', features[20:40])
 # Train and test set seems to be well balanced with respect to the distribution of numeric variables
 
 # Features correlation
