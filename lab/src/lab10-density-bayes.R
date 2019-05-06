@@ -1,5 +1,3 @@
-
-
 n <- 200
 w <- 0.9
 x <- w * rnorm(n, 5, 1) + (1 - w) * rnorm(n, 10, 1)
@@ -79,5 +77,36 @@ persp(f_equake, col = 'red')
 persp(f_explosn, col = 'blue')
 
 # Task 4
+df <- read.csv2('../data/winequality-white.csv')
+df$quality[df$quality <= 5] <- 0
+df$quality[df$quality > 5] <- 1
+df$quality <- as.factor(df$quality)
+
+indices <- sample(1:nrow(df), size = floor(2 * nrow(df) / 2))
+train <- df[indices, ]
+test <- df[-indices, ]
+
 library(e1071)
-?naiveBayes
+lda_train <- lda(quality ~ ., data = train)
+qda_train <- qda(quality ~ ., data = train)
+nb_train <- naiveBayes(quality ~ ., data = train)
+
+lda_predict <- predict(lda_train, test)$posterior[,2]
+qda_predict <- predict(qda_train, test)$posterior[,2]
+nb_predict <- predict(nb_train, test, type = 'raw')[,2]
+
+library(ROCR)
+labels <- test$quality
+
+lda_poz <- prediction(lda_predict, 'tpr', 'fpr')
+qda_poz <- prediction(qda_predict, 'tpr', 'fpr')
+nb_poz <- prediction(nb_predict, 'tpr', 'fpr')
+
+# AUC
+auc_lda_poz <- performance(lda_poz, 'auc')
+auc_qda_poz <- performance(qda_poz, 'auc')
+auc_nb_poz <- performance(nb_poz, 'auc')
+
+auc_lda_poz$y.values[[1]]
+auc_qda_poz$y.values[[1]]
+auc_nb_poz$y.values[[1]]
