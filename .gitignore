@@ -1,3 +1,25 @@
+# RStudio
 .Rhistory
 .RData
+
+ # PyCharm
 .idea/
+
+# LaTeX
+*.aux
+*.out
+*.log
+*.synctex.gz
+*.bbl
+*.blg
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+
+# Python
+__pycache__/
+
+# CatBoost
+catboost_info
