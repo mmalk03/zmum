@@ -116,8 +116,8 @@ def main():
     # rfe_cv_lgbm_features = [106, 154, 319, 337, 379, 443, 454]
     x_rfe_cv_lgbm = x.filter(rfe_cv_lgbm_features)
     best_lgbm = fine_tuning.fine_tune_lightgbm(x_rfe_cv_lgbm, y)
-    # Best params: TODO
-    # Best Balanced accuracy: TODO
+    # Best params: {'max_bin': 255, 'n_estimators': 80, 'num_leaves': 41}
+    # Best Balanced accuracy: 0.872
     x_test_rfe_cv_lgbm = x_test.filter(rfe_cv_lgbm_features)
     y_test_predictions_lgbm = best_lgbm.predict_proba(x_test_rfe_cv_lgbm)
     repository.save_results(

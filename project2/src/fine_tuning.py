@@ -41,19 +41,12 @@ def _fine_tune(model, params, x, y):
 
 
 def fine_tune_lightgbm(x, y):
-    kwargs = {
-        'tree_method': 'gpu_hist',
-        'predictor': 'gpu_predictor',
-    }
     params = {
-        'max_depth': [3, 4, 5, 6],  # 5
-        'n_estimators': [150, 200, 250],  # 200
-        'min_child_weight': [7],  # 7
-        'gamma': [0, 0.2],  # 0
-        'subsample': [0.8, 1.0],  # 0.8
-        'colsample_bytree': [0.8, 1.0],  # 0.8
+        'max_bin': [205, 255, 305],
+        'num_leaves': [21, 26, 31, 36, 41],
+        'n_estimators': [60, 80, 100, 120, 140],
     }
-    model = LGBMClassifier(random_state=42, **kwargs)
+    model = LGBMClassifier(random_state=42)
     return _fine_tune(model, params, x, y)
 
 
