@@ -65,3 +65,11 @@ def plot_roc_curve(results):
     plt.legend(loc="lower right")
     plt.show()
     fig.savefig('roc-comparison.png')
+
+
+def plot_rfe(grid_scores):
+    plt.figure()
+    plt.xlabel("Number of features selected")
+    plt.ylabel("Cross validation score (nb of correct classifications)")
+    plt.plot(range(1, len(grid_scores) + 1), grid_scores)
+    plt.show()
