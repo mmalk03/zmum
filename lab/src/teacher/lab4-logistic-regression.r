@@ -54,7 +54,7 @@ summary(SA.logit.bic)
 ###### ZADANIE 2 #######
 library(ggplot2)
 
-dane <- read.table("http://www.ipipan.eu/~teisseyrep/TEACHING/ZMUM/DANE/earthquake.txt", h = T)
+dane <- read.table("https://home.ipipan.waw.pl/p.teisseyre/TEACHING/ZMUM/DANE/earthquake.txt", h = T)
 
 #Wykres: 
 ggplot(data = dane, aes(x = body, y = surface, col = popn))+
